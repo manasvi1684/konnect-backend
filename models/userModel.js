@@ -3,8 +3,10 @@ import db from '../db/db.js';
 
 export const createUser = async (userData) => {
   try {
-    const result = await db('users').insert(userData).returning('id');
-    const id = result[0].id;
+    // This function is still used but primarily for direct calls outside of the main
+    // signup flow or if you decide not to use a transaction for single user creation.
+    // In authController's signup, we're now using `trx('users').insert(...)` directly.
+    const [id] = await db('users').insert(userData).returning('id');
     return id;
   } catch (error) {
     console.error('Error creating user:', error);

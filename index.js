@@ -11,7 +11,7 @@ const port = process.env.PORT || 3001; //Use environment variables or port 3001
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Add to parse URL-encoded bodies
 
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
