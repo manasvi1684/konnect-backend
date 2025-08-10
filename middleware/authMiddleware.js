@@ -1,31 +1,47 @@
 // middleware/authMiddleware.js
 import jwt from 'jsonwebtoken';
 
-// Make sure your JWT_SECRET is loaded from .env
-// You might need to import dotenv or ensure it's loaded globally in your index.js
-// For example, if you use dotenv: import 'dotenv/config'; // At the very top of index.js
-const JWT_SECRET = process.env.JWT_SECRET_KEY; // This must match the key you use in .env
+const JWT_SECRET = process.env.JWT_SECRET_KEY; // Ensure this matches your .env
 
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  // Expected format: "Bearer TOKEN"
   const token = authHeader && authHeader.split(' ')[1];
 
   if (token == null) {
-    // No token provided
     return res.status(401).json({ message: 'Authentication token required.' });
   }
 
-  // Verify the token
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      // Token is invalid or expired
-      console.error("JWT verification failed:", err.message); // Log the specific JWT error
+      console.error("JWT verification failed:", err.message);
       return res.status(403).json({ message: 'Invalid or expired token.' });
     }
-    // Token is valid, attach user payload (from JWT) to the request object
-    // This 'user' object contains { id: userId, roles: assignedRoles }
-    req.user = user;
-    next(); // Proceed to the next middleware/route handler
+    req.user = user; // { id: userId, roles: ['mentor', 'student'] }
+    next();
   });
+};
+
+/**
+ * Middleware to authorize access based on user roles.
+ * @param {string[]} allowedRoles - An array of roles allowed to access the route.
+ * @returns {Function} Express middleware function.
+ */
+export const authorize = (allowedRoles) => {
+  return (req, res, next) => {
+    // Ensure req.user exists (i.e., authenticateToken ran before this)
+    if (!req.user || !req.user.roles) {
+      return res.status(401).json({ message: 'User not authenticated or roles missing.' });
+    }
+
+    const userRoles = req.user.roles; // e.g., ['mentor', 'student']
+
+    // Check if the user has at least one of the allowed roles
+    const hasPermission = userRoles.some(role => allowedRoles.includes(role));
+
+    if (hasPermission) {
+      next(); // User has permission, proceed
+    } else {
+      res.status(403).json({ message: 'Forbidden: You do not have the required role to perform this action.' });
+    }
+  };
 };
